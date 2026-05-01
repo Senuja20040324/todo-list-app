@@ -8,33 +8,56 @@ def load_tasks():
     if not os.path.exists(TASKS_FILE):
         return []
     with open(TASKS_FILE, "r") as f:
-        return json.load(f)
+        content = f.read().strip()
+        if not content:  # ← handles empty file
+            return []
+        return json.loads(content)
 
 def save_tasks(tasks):
     with open(TASKS_FILE, "w") as f:
         json.dump(tasks, f, indent=2)
 
+def get_priority():
+    print("\nSelect Priority:")
+    print("  1. 🔴 High")
+    print("  2. 🟡 Medium")
+    print("  3. 🟢 Low")
+    choice = input("Choose (1/2/3): ")
+    priorities = {"1": "High", "2": "Medium", "3": "Low"}
+    return priorities.get(choice, "Medium")  # Default: Medium
+
 def add_task(title):
     tasks = load_tasks()
+    priority = get_priority()
     task = {
         "id": len(tasks) + 1,
         "title": title,
+        "priority": priority,
         "done": False,
         "created_at": datetime.now().strftime("%Y-%m-%d %H:%M")
     }
     tasks.append(task)
     save_tasks(tasks)
-    print(f"✅ Task added: {title}")
+    print(f"✅ Task added: [{priority}] {title}")
 
 def list_tasks():
     tasks = load_tasks()
     if not tasks:
         print("No tasks yet!")
         return
+
+    # Sort by priority
+    priority_order = {"High": 1, "Medium": 2, "Low": 3}
+    tasks.sort(key=lambda x: priority_order.get(x["priority"], 2))
+
     print("\n📋 Your Tasks:")
+    print(f"  {'ID':<5} {'Priority':<10} {'Status':<8} {'Title':<30} {'Created'}")
+    print("  " + "-" * 65)
     for task in tasks:
-        status = "✔" if task["done"] else "✘"
-        print(f"  [{status}] {task['id']}. {task['title']} ({task['created_at']})")
+        status = "✔ Done" if task["done"] else "✘ Todo"
+        priority = task.get("priority", "Medium")
+        emoji = {"High": "🔴", "Medium": "🟡", "Low": "🟢"}.get(priority, "🟡")
+        print(f"  {task['id']:<5} {emoji + priority:<12} {status:<8} {task['title']:<30} {task['created_at']}")
 
 def complete_task(task_id):
     tasks = load_tasks()
