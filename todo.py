@@ -145,6 +145,47 @@ def show_overdue():
         for task in overdue:
             print(f"  {Fore.RED}❗ [{task['id']}] {task['title']} - was due {task['due_date']}")
 
+def search_tasks(keyword):
+    tasks = load_tasks()
+    keyword = keyword.lower()
+    results = [t for t in tasks if keyword in t["title"].lower()]
+
+    if not results:
+        print(f"{Fore.YELLOW}🔍 No tasks found for: '{keyword}'")
+        return
+
+    print(f"\n{Fore.CYAN}{'='*65}")
+    print(f"{Fore.CYAN}  🔍 Search Results for: '{keyword}' ({len(results)} found)")
+    print(f"{Fore.CYAN}{'='*65}")
+
+    for task in results:
+        # Status color
+        if task["done"]:
+            status = f"{Fore.GREEN}✔ Done  "
+        else:
+            status = f"{Fore.RED}✘ Todo  "
+
+        # Priority color
+        priority = task.get("priority", "Medium")
+        priority_colors = {
+            "High":   f"{Fore.RED}🔴 High  ",
+            "Medium": f"{Fore.YELLOW}🟡 Medium",
+            "Low":    f"{Fore.GREEN}🟢 Low   "
+        }
+        priority_display = priority_colors.get(priority, f"{Fore.YELLOW}🟡 Medium")
+        due_status = check_due_status(task.get("due_date"))
+
+        # Highlight keyword in title
+        highlighted = task["title"].replace(
+            keyword, f"{Fore.MAGENTA}{keyword}{Fore.WHITE}"
+        )
+
+        print(f"  {Fore.WHITE}[{task['id']}] {priority_display} | {status} | {highlighted}")
+        print(f"       {due_status}")
+        print()
+
+    print(f"{Fore.CYAN}{'='*65}")
+
 def main():
     while True:
         print(f"\n{Fore.CYAN}{'='*25}")
@@ -155,7 +196,8 @@ def main():
         print(f"{Fore.WHITE}3. ✔️  Complete Task")
         print(f"{Fore.WHITE}4. 🗑️  Delete Task")
         print(f"{Fore.WHITE}5. ⚠️  Show Overdue Tasks")
-        print(f"{Fore.WHITE}6. 🚪 Exit")
+        print(f"{Fore.WHITE}6. 🔍 Search Tasks")
+        print(f"{Fore.WHITE}7. 🚪 Exit")
         choice = input(f"{Fore.CYAN}Choose: ")
 
         if choice == "1":
@@ -172,6 +214,9 @@ def main():
         elif choice == "5":
             show_overdue()
         elif choice == "6":
+            keyword = input(f"{Fore.WHITE}Enter search keyword: ")
+            search_tasks(keyword)
+        elif choice == "7":
             print(f"{Fore.GREEN}Goodbye! 👋")
             break
         else:
