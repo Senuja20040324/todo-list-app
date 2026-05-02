@@ -9,7 +9,7 @@ def load_tasks():
         return []
     with open(TASKS_FILE, "r") as f:
         content = f.read().strip()
-        if not content:  # ← handles empty file
+        if not content:
             return []
         return json.loads(content)
 
@@ -24,21 +24,50 @@ def get_priority():
     print("  3. 🟢 Low")
     choice = input("Choose (1/2/3): ")
     priorities = {"1": "High", "2": "Medium", "3": "Low"}
-    return priorities.get(choice, "Medium")  # Default: Medium
+    return priorities.get(choice, "Medium")
+
+def get_due_date():
+    while True:
+        due_date = input("Enter due date (YYYY-MM-DD) or press Enter to skip: ").strip()
+        if due_date == "":
+            return None  # No due date
+        try:
+            datetime.strptime(due_date, "%Y-%m-%d")  # Validate format
+            return due_date
+        except ValueError:
+            print("❌ Invalid format! Please use YYYY-MM-DD (e.g. 2026-05-10)")
+
+def check_due_status(due_date):
+    if not due_date:
+        return ""
+    today = datetime.now().date()
+    due = datetime.strptime(due_date, "%Y-%m-%d").date()
+    diff = (due - today).days
+    if diff < 0:
+        return "⚠️ Overdue!"
+    elif diff == 0:
+        return "⏰ Due Today!"
+    elif diff <= 3:
+        return f"⚡ Due in {diff} day(s)"
+    else:
+        return f"📅 {due_date}"
 
 def add_task(title):
     tasks = load_tasks()
     priority = get_priority()
+    due_date = get_due_date()
     task = {
         "id": len(tasks) + 1,
         "title": title,
         "priority": priority,
+        "due_date": due_date,
         "done": False,
         "created_at": datetime.now().strftime("%Y-%m-%d %H:%M")
     }
     tasks.append(task)
     save_tasks(tasks)
-    print(f"✅ Task added: [{priority}] {title}")
+    due_info = f" | Due: {due_date}" if due_date else ""
+    print(f"✅ Task added: [{priority}] {title}{due_info}")
 
 def list_tasks():
     tasks = load_tasks()
@@ -51,13 +80,14 @@ def list_tasks():
     tasks.sort(key=lambda x: priority_order.get(x["priority"], 2))
 
     print("\n📋 Your Tasks:")
-    print(f"  {'ID':<5} {'Priority':<10} {'Status':<8} {'Title':<30} {'Created'}")
-    print("  " + "-" * 65)
+    print("  " + "-" * 75)
     for task in tasks:
         status = "✔ Done" if task["done"] else "✘ Todo"
         priority = task.get("priority", "Medium")
         emoji = {"High": "🔴", "Medium": "🟡", "Low": "🟢"}.get(priority, "🟡")
-        print(f"  {task['id']:<5} {emoji + priority:<12} {status:<8} {task['title']:<30} {task['created_at']}")
+        due_status = check_due_status(task.get("due_date"))
+        print(f"  ID: {task['id']}  {emoji}{priority:<8} | {status:<8} | {task['title']:<25} | {due_status}")
+    print("  " + "-" * 75)
 
 def complete_task(task_id):
     tasks = load_tasks()
@@ -75,6 +105,22 @@ def delete_task(task_id):
     save_tasks(tasks)
     print(f"🗑️ Task {task_id} deleted.")
 
+def show_overdue():
+    tasks = load_tasks()
+    today = datetime.now().date()
+    overdue = []
+    for task in tasks:
+        if task.get("due_date") and not task["done"]:
+            due = datetime.strptime(task["due_date"], "%Y-%m-%d").date()
+            if due < today:
+                overdue.append(task)
+    if not overdue:
+        print("✅ No overdue tasks!")
+    else:
+        print(f"\n⚠️ Overdue Tasks ({len(overdue)}):")
+        for task in overdue:
+            print(f"  ❗ [{task['id']}] {task['title']} - was due {task['due_date']}")
+
 def main():
     while True:
         print("\n==== TO-DO APP ====")
@@ -82,7 +128,8 @@ def main():
         print("2. List Tasks")
         print("3. Complete Task")
         print("4. Delete Task")
-        print("5. Exit")
+        print("5. Show Overdue Tasks")
+        print("6. Exit")
         choice = input("Choose: ")
 
         if choice == "1":
@@ -97,6 +144,8 @@ def main():
             task_id = int(input("Task ID to delete: "))
             delete_task(task_id)
         elif choice == "5":
+            show_overdue()
+        elif choice == "6":
             print("Goodbye! 👋")
             break
         else:
