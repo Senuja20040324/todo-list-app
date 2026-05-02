@@ -1,6 +1,10 @@
 import json
 import os
 from datetime import datetime
+from colorama import init, Fore, Back, Style
+
+# Initialize colorama (required for Windows)
+init(autoreset=True)
 
 TASKS_FILE = "tasks.json"
 
@@ -18,39 +22,39 @@ def save_tasks(tasks):
         json.dump(tasks, f, indent=2)
 
 def get_priority():
-    print("\nSelect Priority:")
-    print("  1. 🔴 High")
-    print("  2. 🟡 Medium")
-    print("  3. 🟢 Low")
-    choice = input("Choose (1/2/3): ")
+    print(f"\n{Fore.CYAN}Select Priority:")
+    print(f"  {Fore.RED}1. 🔴 High")
+    print(f"  {Fore.YELLOW}2. 🟡 Medium")
+    print(f"  {Fore.GREEN}3. 🟢 Low")
+    choice = input(f"{Fore.WHITE}Choose (1/2/3): ")
     priorities = {"1": "High", "2": "Medium", "3": "Low"}
     return priorities.get(choice, "Medium")
 
 def get_due_date():
     while True:
-        due_date = input("Enter due date (YYYY-MM-DD) or press Enter to skip: ").strip()
+        due_date = input(f"{Fore.CYAN}Enter due date (YYYY-MM-DD) or press Enter to skip: ").strip()
         if due_date == "":
-            return None  # No due date
+            return None
         try:
-            datetime.strptime(due_date, "%Y-%m-%d")  # Validate format
+            datetime.strptime(due_date, "%Y-%m-%d")
             return due_date
         except ValueError:
-            print("❌ Invalid format! Please use YYYY-MM-DD (e.g. 2026-05-10)")
+            print(f"{Fore.RED}❌ Invalid format! Please use YYYY-MM-DD (e.g. 2026-05-10)")
 
 def check_due_status(due_date):
     if not due_date:
-        return ""
+        return f"{Fore.WHITE}No due date"
     today = datetime.now().date()
     due = datetime.strptime(due_date, "%Y-%m-%d").date()
     diff = (due - today).days
     if diff < 0:
-        return "⚠️ Overdue!"
+        return f"{Fore.RED}⚠️  Overdue!"
     elif diff == 0:
-        return "⏰ Due Today!"
+        return f"{Fore.MAGENTA}⏰ Due Today!"
     elif diff <= 3:
-        return f"⚡ Due in {diff} day(s)"
+        return f"{Fore.YELLOW}⚡ Due in {diff} day(s)"
     else:
-        return f"📅 {due_date}"
+        return f"{Fore.GREEN}📅 {due_date}"
 
 def add_task(title):
     tasks = load_tasks()
@@ -67,27 +71,47 @@ def add_task(title):
     tasks.append(task)
     save_tasks(tasks)
     due_info = f" | Due: {due_date}" if due_date else ""
-    print(f"✅ Task added: [{priority}] {title}{due_info}")
+    print(f"{Fore.GREEN}✅ Task added: [{priority}] {title}{due_info}")
 
 def list_tasks():
     tasks = load_tasks()
     if not tasks:
-        print("No tasks yet!")
+        print(f"{Fore.YELLOW}No tasks yet!")
         return
 
-    # Sort by priority
     priority_order = {"High": 1, "Medium": 2, "Low": 3}
     tasks.sort(key=lambda x: priority_order.get(x["priority"], 2))
 
-    print("\n📋 Your Tasks:")
-    print("  " + "-" * 75)
+    print(f"\n{Fore.CYAN}{'='*65}")
+    print(f"{Fore.CYAN}  📋 YOUR TASKS")
+    print(f"{Fore.CYAN}{'='*65}")
+
     for task in tasks:
-        status = "✔ Done" if task["done"] else "✘ Todo"
+        # Status color
+        if task["done"]:
+            status = f"{Fore.GREEN}✔ Done  "
+        else:
+            status = f"{Fore.RED}✘ Todo  "
+
+        # Priority color
         priority = task.get("priority", "Medium")
-        emoji = {"High": "🔴", "Medium": "🟡", "Low": "🟢"}.get(priority, "🟡")
+        priority_colors = {
+            "High":   f"{Fore.RED}🔴 High  ",
+            "Medium": f"{Fore.YELLOW}🟡 Medium",
+            "Low":    f"{Fore.GREEN}🟢 Low   "
+        }
+        priority_display = priority_colors.get(priority, f"{Fore.YELLOW}🟡 Medium")
+
+        # Title color (grey if done)
+        title_display = f"{Fore.WHITE}{task['title']}" if not task["done"] else f"{Fore.WHITE}{Style.DIM}{task['title']}"
+
         due_status = check_due_status(task.get("due_date"))
-        print(f"  ID: {task['id']}  {emoji}{priority:<8} | {status:<8} | {task['title']:<25} | {due_status}")
-    print("  " + "-" * 75)
+
+        print(f"  {Fore.WHITE}[{task['id']}] {priority_display} | {status} | {title_display}")
+        print(f"       {due_status}")
+        print()
+
+    print(f"{Fore.CYAN}{'='*65}")
 
 def complete_task(task_id):
     tasks = load_tasks()
@@ -95,15 +119,15 @@ def complete_task(task_id):
         if task["id"] == task_id:
             task["done"] = True
             save_tasks(tasks)
-            print(f"🎉 Task {task_id} marked as done!")
+            print(f"{Fore.GREEN}🎉 Task {task_id} marked as done!")
             return
-    print("Task not found.")
+    print(f"{Fore.RED}Task not found.")
 
 def delete_task(task_id):
     tasks = load_tasks()
     tasks = [t for t in tasks if t["id"] != task_id]
     save_tasks(tasks)
-    print(f"🗑️ Task {task_id} deleted.")
+    print(f"{Fore.YELLOW}🗑️  Task {task_id} deleted.")
 
 def show_overdue():
     tasks = load_tasks()
@@ -115,41 +139,43 @@ def show_overdue():
             if due < today:
                 overdue.append(task)
     if not overdue:
-        print("✅ No overdue tasks!")
+        print(f"{Fore.GREEN}✅ No overdue tasks!")
     else:
-        print(f"\n⚠️ Overdue Tasks ({len(overdue)}):")
+        print(f"\n{Fore.RED}⚠️  Overdue Tasks ({len(overdue)}):")
         for task in overdue:
-            print(f"  ❗ [{task['id']}] {task['title']} - was due {task['due_date']}")
+            print(f"  {Fore.RED}❗ [{task['id']}] {task['title']} - was due {task['due_date']}")
 
 def main():
     while True:
-        print("\n==== TO-DO APP ====")
-        print("1. Add Task")
-        print("2. List Tasks")
-        print("3. Complete Task")
-        print("4. Delete Task")
-        print("5. Show Overdue Tasks")
-        print("6. Exit")
-        choice = input("Choose: ")
+        print(f"\n{Fore.CYAN}{'='*25}")
+        print(f"{Fore.CYAN}   ✅ TO-DO APP")
+        print(f"{Fore.CYAN}{'='*25}")
+        print(f"{Fore.WHITE}1. ➕ Add Task")
+        print(f"{Fore.WHITE}2. 📋 List Tasks")
+        print(f"{Fore.WHITE}3. ✔️  Complete Task")
+        print(f"{Fore.WHITE}4. 🗑️  Delete Task")
+        print(f"{Fore.WHITE}5. ⚠️  Show Overdue Tasks")
+        print(f"{Fore.WHITE}6. 🚪 Exit")
+        choice = input(f"{Fore.CYAN}Choose: ")
 
         if choice == "1":
-            title = input("Task title: ")
+            title = input(f"{Fore.WHITE}Task title: ")
             add_task(title)
         elif choice == "2":
             list_tasks()
         elif choice == "3":
-            task_id = int(input("Task ID to complete: "))
+            task_id = int(input(f"{Fore.WHITE}Task ID to complete: "))
             complete_task(task_id)
         elif choice == "4":
-            task_id = int(input("Task ID to delete: "))
+            task_id = int(input(f"{Fore.WHITE}Task ID to delete: "))
             delete_task(task_id)
         elif choice == "5":
             show_overdue()
         elif choice == "6":
-            print("Goodbye! 👋")
+            print(f"{Fore.GREEN}Goodbye! 👋")
             break
         else:
-            print("Invalid choice.")
+            print(f"{Fore.RED}Invalid choice.")
 
 if __name__ == "__main__":
     main()
