@@ -186,6 +186,55 @@ def search_tasks(keyword):
 
     print(f"{Fore.CYAN}{'='*65}")
 
+
+def show_statistics():
+    tasks = load_tasks()
+
+    if not tasks:
+        print(f"{Fore.YELLOW}No tasks yet!")
+        return
+
+    # Calculate stats
+    total      = len(tasks)
+    done       = sum(1 for t in tasks if t["done"])
+    pending    = total - done
+    high       = sum(1 for t in tasks if t.get("priority") == "High" and not t["done"])
+    medium     = sum(1 for t in tasks if t.get("priority") == "Medium" and not t["done"])
+    low        = sum(1 for t in tasks if t.get("priority") == "Low" and not t["done"])
+    today      = datetime.now().date()
+    overdue    = sum(1 for t in tasks if t.get("due_date") and not t["done"]
+                    and datetime.strptime(t["due_date"], "%Y-%m-%d").date() < today)
+    due_today  = sum(1 for t in tasks if t.get("due_date") and not t["done"]
+                    and datetime.strptime(t["due_date"], "%Y-%m-%d").date() == today)
+
+    # Progress bar
+    percent = int((done / total) * 100) if total > 0 else 0
+    filled  = int(percent / 5)
+    bar     = f"{Fore.GREEN}{'█' * filled}{Fore.WHITE}{'░' * (20 - filled)}"
+
+    print(f"\n{Fore.CYAN}{'='*40}")
+    print(f"{Fore.CYAN}   📊 TASK STATISTICS")
+    print(f"{Fore.CYAN}{'='*40}")
+
+    print(f"\n  {Fore.WHITE}Overall Progress:")
+    print(f"  [{bar}{Fore.WHITE}] {Fore.GREEN}{percent}%")
+
+    print(f"\n  {Fore.WHITE}📋 Total Tasks   : {Fore.CYAN}{total}")
+    print(f"  {Fore.GREEN}✔  Completed     : {Fore.GREEN}{done}")
+    print(f"  {Fore.RED}✘  Pending       : {Fore.RED}{pending}")
+
+    print(f"\n  {Fore.WHITE}📌 Pending by Priority:")
+    print(f"  {Fore.RED}🔴 High          : {Fore.RED}{high}")
+    print(f"  {Fore.YELLOW}🟡 Medium        : {Fore.YELLOW}{medium}")
+    print(f"  {Fore.GREEN}🟢 Low           : {Fore.GREEN}{low}")
+
+    print(f"\n  {Fore.WHITE}📅 Due Dates:")
+    print(f"  {Fore.RED}⚠️  Overdue       : {Fore.RED}{overdue}")
+    print(f"  {Fore.MAGENTA}⏰ Due Today     : {Fore.MAGENTA}{due_today}")
+
+    print(f"\n{Fore.CYAN}{'='*40}")
+
+
 def main():
     while True:
         print(f"\n{Fore.CYAN}{'='*25}")
@@ -197,7 +246,8 @@ def main():
         print(f"{Fore.WHITE}4. 🗑️  Delete Task")
         print(f"{Fore.WHITE}5. ⚠️  Show Overdue Tasks")
         print(f"{Fore.WHITE}6. 🔍 Search Tasks")
-        print(f"{Fore.WHITE}7. 🚪 Exit")
+        print(f"{Fore.WHITE}7. 📊 Task Statistics")
+        print(f"{Fore.WHITE}8. 🚪 Exit")
         choice = input(f"{Fore.CYAN}Choose: ")
 
         if choice == "1":
@@ -217,6 +267,8 @@ def main():
             keyword = input(f"{Fore.WHITE}Enter search keyword: ")
             search_tasks(keyword)
         elif choice == "7":
+            show_statistics()
+        elif choice == "8":
             print(f"{Fore.GREEN}Goodbye! 👋")
             break
         else:
