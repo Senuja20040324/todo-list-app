@@ -234,6 +234,24 @@ def show_statistics():
 
     print(f"\n{Fore.CYAN}{'='*40}")
 
+def export_to_csv():
+    import csv
+    tasks = load_tasks()
+
+    if not tasks:
+        print(f"{Fore.YELLOW}No tasks to export!")
+        return
+
+    filename = f"tasks_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+
+    with open(filename, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["id", "title", "priority", "due_date", "done", "created_at"])
+        writer.writeheader()
+        writer.writerows(tasks)
+
+    print(f"{Fore.GREEN}✅ Tasks exported successfully!")
+    print(f"{Fore.CYAN}📄 File saved as: {Fore.WHITE}{filename}")
+
 
 def main():
     while True:
@@ -247,7 +265,8 @@ def main():
         print(f"{Fore.WHITE}5. ⚠️  Show Overdue Tasks")
         print(f"{Fore.WHITE}6. 🔍 Search Tasks")
         print(f"{Fore.WHITE}7. 📊 Task Statistics")
-        print(f"{Fore.WHITE}8. 🚪 Exit")
+        print(f"{Fore.WHITE}8. 📤 Export to CSV")
+        print(f"{Fore.WHITE}9. 🚪 Exit")
         choice = input(f"{Fore.CYAN}Choose: ")
 
         if choice == "1":
@@ -269,6 +288,8 @@ def main():
         elif choice == "7":
             show_statistics()
         elif choice == "8":
+            export_to_csv()
+        elif choice == "9":
             print(f"{Fore.GREEN}Goodbye! 👋")
             break
         else:
